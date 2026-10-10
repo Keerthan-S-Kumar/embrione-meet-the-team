@@ -24,7 +24,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className="flex flex-col">
+      <body className="flex flex-col" suppressHydrationWarning>
         <Constellation />
         <CursorGlow />
         <Nav />
