@@ -7,6 +7,7 @@ import { Nav } from "@/components/Nav";
 import { Footer } from "@/components/Footer";
 import { ConfigBanner } from "@/components/ConfigBanner";
 import { CursorGlow } from "@/components/CursorGlow";
+import { Constellation } from "@/components/Constellation";
 
 export const metadata: Metadata = {
   title: { default: "Embrione: Meet the Team", template: "%s | Embrione" },
@@ -24,6 +25,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body className="flex flex-col">
+        <Constellation />
         <CursorGlow />
         <Nav />
         <ConfigBanner />
