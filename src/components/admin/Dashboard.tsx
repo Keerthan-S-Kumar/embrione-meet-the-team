@@ -177,11 +177,13 @@ export function Dashboard({ email }: { email: string }) {
     <div>
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-semibold leading-[1.05] sm:text-6xl">Moderation</h1>
+          <h1 className="bg-gradient-to-br from-fg via-eosin to-[#7aa2ff] bg-clip-text pb-2 text-5xl font-semibold leading-[1.02] text-transparent sm:text-7xl">
+            Moderation
+          </h1>
           <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-dim">
             <span className={cn("size-2 rounded-full", live ? "bg-ok" : "bg-wall-2")} aria-hidden="true" />
-            <span>{live ? "Live updates on." : "Live updates off, refresh to check."}</span>
             <span>Signed in as {email}</span>
+            <span>{live ? "|  Live updates on." : "|  Live updates off, refresh to check."}</span>
           </p>
         </div>
         <div className="flex items-center gap-2">
