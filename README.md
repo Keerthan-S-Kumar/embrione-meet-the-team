@@ -4,7 +4,18 @@ A full-stack onboarding and moderation system for The Embrione (PES University, 
 Members build a card with a live preview, an admin approves it, and approved members appear on a public, filterable team page.
 
 **Live site:** `https://keerthan-embrione-task.vercel.app`
+
 **Stack:** Next.js (App Router) · TypeScript · Tailwind CSS v4 · Supabase (Postgres, Auth, Storage, Realtime) · Vercel
+
+## Screenshots
+
+| Team directory | Register with live preview |
+|---|---|
+| ![Team page](docs/screenshots/team.png) | ![Register page](docs/screenshots/register.png) |
+
+| Admin moderation | Home |
+|---|---|
+| ![Admin dashboard](docs/screenshots/admin.png) | ![Home page](docs/screenshots/home.png) |
 
 ## Pages
 
@@ -61,3 +72,15 @@ supabase/         schema.sql and seed.sql
 ## Accessibility and responsiveness
 
 Labelled form controls with error messages tied to fields, visible focus rings, reduced-motion support, and layouts checked down to 390 px wide. On phones a floating "Preview card" button jumps back to the live card.
+
+## What I learned
+
+This was my first project using Supabase and client-side image processing, and I built it phase by phase. Things that were new to me:
+
+- **Row-level security.** The anon key is public in the browser, so the database policies are the real protection. Visitors can only insert `pending` rows and read `approved` ones, and only the signed-in admin can approve, reject or delete.
+- **Client-side WebP conversion.** I decode the photo, shrink it on a canvas to at most 800 px, and re-encode it with `canvas.toBlob`. A large JPEG drops to under 100 KB, and the form shows the before and after sizes. I also learned that phone photos need their EXIF rotation applied, or they come out sideways.
+- **Uploading on submit, not on select.** The preview uses a local blob URL, so nothing reaches storage until the user submits, and abandoned forms leave no stray files.
+- **Duplicate SRN handling in two layers.** A small SQL function tells the form whether an SRN is taken without exposing private rows, and a unique index is the final guard against two people submitting at once.
+- **Deploying with environment variables.** My first production build failed until I fixed the Supabase URL (it had `/rest/v1/` on the end) and added the variables in Vercel, which taught me to deploy early.
+
+If I had more time, I would add image cropping, pagination on the team page, and automated tests for the form rules.
