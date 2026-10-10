@@ -2,10 +2,6 @@ import type { Metadata } from "next";
 import { TeamDirectory } from "@/components/team/TeamDirectory";
 import { Suspense } from "react";
 
-<Suspense fallback={null}>
-  <TeamDirectory />
-</Suspense>
-
 export const metadata: Metadata = {
   title: "Meet the team",
   description: "The students who build and run Embrione at PES University, filterable by domain and position.",
@@ -24,7 +20,9 @@ export default function TeamPage() {
           Filter by what they do or how long they&apos;ve led it.
         </p>
       </header>
-      <TeamDirectory />
+      <Suspense fallback={null}>
+        <TeamDirectory />
+      </Suspense>
     </>
   );
 }
