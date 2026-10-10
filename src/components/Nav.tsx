@@ -18,7 +18,9 @@ export function Nav() {
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-5 sm:px-8">
         <Link href="/" className="flex items-center gap-2.5" aria-label="Embrione home">
           <CellMark className="size-7" />
-          <span className="font-display text-xl font-semibold tracking-tight">Embrione</span>
+          <span className="bg-linear-to-r from-[#c39bff] to-eosin bg-clip-text font-display text-xl font-semibold tracking-tight text-transparent">
+            Embrione
+          </span>
         </Link>
         <nav aria-label="Main" className="flex items-center gap-1">
           {LINKS.map((l) => {
