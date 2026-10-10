@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, MotionConfig, motion } from "motion/react";
 import { Search, SearchX, Users } from "lucide-react";
 import { MemberCard } from "@/components/MemberCard";
@@ -14,8 +15,21 @@ export function TeamDirectory() {
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>();
-  const [domain, setDomain] = useState<string>("All");
-  const [position, setPosition] = useState<string>("All");
+  const router = useRouter();
+const pathname = usePathname();
+const searchParams = useSearchParams();
+const domainParam = searchParams.get("domain") ?? "";
+const positionParam = searchParams.get("position") ?? "";
+const domain = (DOMAINS as readonly string[]).includes(domainParam) ? domainParam : "All";
+const position = (POSITIONS as readonly string[]).includes(positionParam) ? positionParam : "All";
+
+function setFilter(key: "domain" | "position", value: string) {
+  const params = new URLSearchParams(searchParams.toString());
+  if (value === "All") params.delete(key);
+  else params.set(key, value);
+  const qs = params.toString();
+  router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+}
   const [query, setQuery] = useState("");
   const [firstLoad, setFirstLoad] = useState(true);
 
@@ -64,21 +78,20 @@ export function TeamDirectory() {
   const filtering = domain !== "All" || position !== "All" || query.trim() !== "";
 
   function clear() {
-    setDomain("All");
-    setPosition("All");
-    setQuery("");
-  }
+  router.replace(pathname, { scroll: false });
+  setQuery("");
+}
 
   return (
     <MotionConfig reducedMotion="user">
       <section aria-label="Filters" className="flex flex-col gap-5">
         <div role="group" aria-label="Filter by domain" className="flex flex-wrap gap-2">
-          <Chip active={domain === "All"} onClick={() => setDomain("All")}>
+          <Chip active={domain === "All"} onClick={() => setFilter("domain", "All")}>
             All domains
             <Count n={members.length} />
           </Chip>
           {DOMAINS.map((d) => (
-            <Chip key={d} active={domain === d} onClick={() => setDomain(d)} dim={!perDomain[d]}>
+            <Chip key={d} active={domain === d} onClick={() => setFilter("domain", d)} dim={!perDomain[d]}>
               <span className="size-2 rounded-full" style={{ background: domainColor(d) }} aria-hidden="true" />
               {d}
               <Count n={perDomain[d] ?? 0} />
@@ -89,7 +102,7 @@ export function TeamDirectory() {
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div role="group" aria-label="Filter by position" className="flex flex-wrap gap-2">
             {["All", ...POSITIONS].map((p) => (
-              <Chip key={p} active={position === p} onClick={() => setPosition(p)} subtle>
+              <Chip key={p} active={position === p} onClick={() => setFilter("position", p)} subtle>
                 {p === "All" ? "All positions" : p}
               </Chip>
             ))}
