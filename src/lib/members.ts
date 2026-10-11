@@ -33,10 +33,10 @@ export async function srnStatus(srn: string): Promise<Status | null> {
 }
 
 /**
- * Submit flow: upload the WebP first, then insert the row pointing at it.
- * If the insert fails we try to delete the uploaded file so storage doesn't collect orphans.
+ * Submit flow: upload the WebP first, then either insert a fresh row, or, if this SRN was
+ * previously rejected, call resubmit_member() to overwrite that row and move it back to pending.
  */
-export async function submitMember(form: FormState, webp: Blob): Promise<void> {
+export async function submitMember(form: FormState, webp: Blob, resubmitting = false): Promise<void> {
   const path = `${crypto.randomUUID()}.webp`;
 
   const upload = await supabase.storage.from(PHOTO_BUCKET).upload(path, webp, {
@@ -47,11 +47,10 @@ export async function submitMember(form: FormState, webp: Blob): Promise<void> {
 
   const { data: pub } = supabase.storage.from(PHOTO_BUCKET).getPublicUrl(path);
 
-  const { error } = await supabase.from("members").insert({
+  const fields = {
     name: form.name.trim(),
     domain: form.domain,
     position: form.position,
-    srn: normalizeSrn(form.srn),
     email: form.email.trim().toLowerCase(),
     linkedin_url: normalizeUrl(form.linkedin, "linkedin.com"),
     github_url: normalizeUrl(form.github, "github.com"),
@@ -59,8 +58,23 @@ export async function submitMember(form: FormState, webp: Blob): Promise<void> {
     semester: Number(form.semester),
     bio: form.bio.trim(),
     photo_url: pub.publicUrl,
-    status: "pending",
-  });
+  };
+
+  const { error } = resubmitting
+    ? await supabase.rpc("resubmit_member", {
+        p_srn: normalizeSrn(form.srn),
+        p_name: fields.name,
+        p_domain: fields.domain,
+        p_position: fields.position,
+        p_email: fields.email,
+        p_linkedin_url: fields.linkedin_url,
+        p_github_url: fields.github_url,
+        p_branch: fields.branch,
+        p_semester: fields.semester,
+        p_bio: fields.bio,
+        p_photo_url: fields.photo_url,
+      })
+    : await supabase.from("members").insert({ ...fields, srn: normalizeSrn(form.srn), status: "pending" });
 
   if (error) {
     await supabase.storage.from(PHOTO_BUCKET).remove([path]); // best effort; visitors cannot delete, so an orphan may remain

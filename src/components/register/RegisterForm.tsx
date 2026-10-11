@@ -17,10 +17,9 @@ import { cn } from "@/lib/utils";
 
 type SrnCheck = { state: "idle" } | { state: "checking" } | { state: "free" } | { state: "taken"; status: Status };
 
-const TAKEN_MESSAGE: Record<Status, string> = {
+const BLOCKED_MESSAGE: Record<"pending" | "approved", string> = {
   pending: "This SRN already has a submission waiting for review.",
   approved: "This SRN is already on the team page.",
-  rejected: "This SRN was reviewed earlier. Ask an admin to clear it if you need to resubmit.",
 };
 
 const REQUIRED_KEYS = ["name", "domain", "position", "srn", "email", "branch", "semester", "bio", "photo"] as const;
@@ -132,7 +131,8 @@ export function RegisterForm() {
     e.preventDefault();
     setAttempted(true);
 
-    const blocked = Object.keys(errors).length > 0 || srn.state === "taken";
+    const resubmitting = srn.state === "taken" && srn.status === "rejected";
+    const blocked = Object.keys(errors).length > 0 || (srn.state === "taken" && !resubmitting);
     if (blocked || !photo) {
       toast.error("Fix the highlighted fields, then submit again.");
       requestAnimationFrame(() => {
@@ -149,15 +149,15 @@ export function RegisterForm() {
 
     setSubmitting(true);
     try {
-      // Re-check right before saving, in case someone took the SRN while this form was open.
+            // Re-check right before saving, in case the SRN's status changed while this form was open.
       const existing = await srnStatus(form.srn);
-      if (existing) {
+      if (existing && existing !== "rejected") {
         setSrnResult({ value: normalizeSrn(form.srn), status: existing });
-        toast.error(TAKEN_MESSAGE[existing]);
+        toast.error(BLOCKED_MESSAGE[existing]);
         return;
       }
-      await submitMember(form, photo.blob);
-      toast.success("Submitted. An admin will review your card soon.");
+      await submitMember(form, photo.blob, existing === "rejected");
+      toast.success(existing === "rejected" ? "Resubmitted. An admin will review your card again." : "Submitted. An admin will review your card soon.");
       setDone(true);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err) {
@@ -176,7 +176,10 @@ export function RegisterForm() {
     setDone(false);
   }
 
-  const srnError = shown("srn") ?? (srn.state === "taken" ? TAKEN_MESSAGE[srn.status] : undefined);
+  const srnError = shown("srn") ?? (srn.state === "taken" && srn.status !== "rejected" ? BLOCKED_MESSAGE[srn.status] : undefined);
+  const srnNotice = srn.state === "taken" && srn.status === "rejected"
+  ? "Your previous submission for this SRN was rejected. Submitting now will resubmit it for review."
+  : undefined;
   const bioLen = form.bio.trim().length;
 
   const card = (
@@ -260,7 +263,7 @@ export function RegisterForm() {
                 id="srn"
                 label="SRN"
                 error={srnError}
-                hint="Example: PES1UG23CS001"
+                hint={srnNotice ?? "Example: PES1UG23CS001"}
                 aside={
                   srn.state === "checking" ? (
                     <span className="flex items-center gap-1.5 text-[13px] text-dim"><Loader2 className="size-3 animate-spin" aria-hidden="true" />Checking</span>
