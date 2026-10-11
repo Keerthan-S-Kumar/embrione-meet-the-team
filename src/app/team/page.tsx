@@ -1,6 +1,7 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import { TeamDirectory } from "@/components/team/TeamDirectory";
-import { Suspense } from "react";
+
 
 export const metadata: Metadata = {
   title: "Meet the team",
