@@ -12,7 +12,9 @@ export default function Home() {
     <>
       <section className="grid items-center gap-14 pt-4 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-20 lg:pt-10">
         <div>
-          <h1 className="max-w-2xl text-5xl font-semibold leading-[1.02] sm:text-7xl">Put your card on the Embrione team page</h1>
+          <h1 className="max-w-2xl bg-linear-to-br from-fg via-eosin to-[#c39bff] bg-clip-text pb-2 text-5xl font-semibold leading-[1.02] text-transparent sm:text-7xl">
+            Put your card on the Embrione team page
+          </h1>
           <p className="mt-6 max-w-lg text-lg text-dim">
             Fill in a short form, watch your card take shape as you type, and submit it. Once an admin approves it, you&apos;re on the page.
           </p>
