@@ -70,8 +70,9 @@ export async function submitMember(form: FormState, webp: Blob): Promise<void> {
   }
 }
 
-export async function updateStatus(id: string, status: Status): Promise<void> {
-  const { error } = await supabase.from("members").update({ status }).eq("id", id);
+export async function updateStatus(id: string, status: Status, note?: string | null): Promise<void> {
+  const rejection_note = status === "rejected" ? note?.trim() || null : null;
+  const { error } = await supabase.from("members").update({ status, rejection_note }).eq("id", id);
   if (error) throw new Error(error.message);
 }
 

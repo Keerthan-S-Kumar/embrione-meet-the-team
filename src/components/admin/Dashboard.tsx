@@ -33,6 +33,7 @@ export function Dashboard({ email }: { email: string }) {
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState<string>();
   const [confirmId, setConfirmId] = useState<string>();
+  const [rejectingId, setRejectingId] = useState<string>();
   const [live, setLive] = useState(false);
   const confirmTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -96,32 +97,33 @@ export function Dashboard({ email }: { email: string }) {
   }, [activeId]);
 
   /** Optimistic update: change the UI instantly, roll back if the database says no. */
-  const persist = useCallback(async (m: Member, next: Status): Promise<boolean> => {
-    const prev = m.status;
-    setMembers((list) => list.map((x) => (x.id === m.id ? { ...x, status: next } : x)));
-    try {
-      await updateStatus(m.id, next);
-      return true;
-    } catch (err) {
-      setMembers((list) => list.map((x) => (x.id === m.id ? { ...x, status: prev } : x)));
-      toast.error(err instanceof Error ? err.message : "Couldn't update. Try again.");
-      return false;
-    }
-  }, []);
+const persist = useCallback(async (m: Member, next: Status, note?: string | null): Promise<boolean> => {
+  const newNote = next === "rejected" ? note?.trim() || null : null;
+  setMembers((list) => list.map((x) => (x.id === m.id ? { ...x, status: next, rejection_note: newNote } : x)));
+  try {
+    await updateStatus(m.id, next, note);
+    return true;
+  } catch (err) {
+    setMembers((list) => list.map((x) => (x.id === m.id ? m : x))); // put the original row back
+    toast.error(err instanceof Error ? err.message : "Couldn't update. Try again.");
+    return false;
+  }
+}, []);
 
-  const changeStatus = useCallback(
-    async (m: Member, next: Status) => {
-      const prev = m.status;
-      const idx = visible.findIndex((v) => v.id === m.id);
-      setSelectedId(visible[idx + 1]?.id ?? visible[idx - 1]?.id); // move on to the next card
-      if (!(await persist(m, next))) return;
-      const verb = next === "approved" ? "approved" : next === "rejected" ? "rejected" : "moved back to pending";
-      toast.success(`${m.name} ${verb}`, {
-        action: { label: "Undo", onClick: () => void persist({ ...m, status: next }, prev) },
-      });
-    },
-    [visible, persist],
-  );
+const changeStatus = useCallback(
+  async (m: Member, next: Status, note?: string | null) => {
+    const idx = visible.findIndex((v) => v.id === m.id);
+    setSelectedId(visible[idx + 1]?.id ?? visible[idx - 1]?.id); // move on to the next card
+    setRejectingId(undefined);
+    if (!(await persist(m, next, note))) return;
+    const verb = next === "approved" ? "approved" : next === "rejected" ? "rejected" : "moved back to pending";
+    toast.success(`${m.name} ${verb}`, {
+      // Undo restores the previous status AND the previous note
+      action: { label: "Undo", onClick: () => void persist({ ...m, status: next }, m.status, m.rejection_note) },
+    });
+  },
+  [visible, persist],
+);
 
   /** Delete needs two clicks within 4 seconds, so a stray click can't destroy a profile. */
   function requestDelete(m: Member) {
@@ -142,7 +144,7 @@ export function Dashboard({ email }: { email: string }) {
       });
   }
 
-  // Keyboard shortcuts: j/k or arrows to move, a to approve, r to reject.
+  // Keyboard shortcuts: j/k or arrows to move between cards, a to approve, r to reject (opens the rejection note )
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       const t = e.target as HTMLElement;
@@ -154,8 +156,11 @@ export function Dashboard({ email }: { email: string }) {
       } else if (e.key === "k" || e.key === "ArrowUp") {
         e.preventDefault();
         setSelectedId(visible[Math.max(i - 1, 0)]?.id);
-      } else if ((e.key === "a" || e.key === "r") && visible[i]) {
-        changeStatus(visible[i], e.key === "a" ? "approved" : "rejected");
+      } else if (e.key === "a" && visible[i]) {
+        changeStatus(visible[i], "approved");
+      } else if (e.key === "r" && visible[i]) {
+        e.preventDefault(); 
+        setRejectingId(visible[i].id);
       }
     }
     window.addEventListener("keydown", onKey);
@@ -245,7 +250,7 @@ export function Dashboard({ email }: { email: string }) {
         ) : (
           <ul className="flex flex-col gap-4">
             {visible.map((m) => (
-              <ReviewRow key={m.id} member={m} active={m.id === activeId} confirmingDelete={confirmId === m.id} onStatus={changeStatus} onDelete={requestDelete} onSelect={() => setSelectedId(m.id)} />
+              <ReviewRow key={m.id} member={m} active={m.id === activeId} confirmingDelete={confirmId === m.id} rejecting={rejectingId === m.id} onStatus={(member, s) => (s === "rejected" ? setRejectingId(member.id) : changeStatus(member, s))} onRejectConfirm={(member, note) => changeStatus(member, "rejected", note)} onRejectCancel={() => setRejectingId(undefined)} onDelete={requestDelete} onSelect={() => setSelectedId(m.id)} />
             ))}
           </ul>
         )}

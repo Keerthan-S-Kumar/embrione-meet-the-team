@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Check, Mail, Trash2, Undo2, X } from "lucide-react";
 import { GitHubIcon, LinkedInIcon } from "@/components/Icons";
 import { domainColor, type Status } from "@/lib/constants";
@@ -16,13 +17,19 @@ interface Props {
   member: Member;
   active: boolean;
   confirmingDelete: boolean;
+  rejecting: boolean;
   onStatus: (m: Member, s: Status) => void;
+  onRejectConfirm: (m: Member, note: string) => void;
+  onRejectCancel: () => void;
   onDelete: (m: Member) => void;
   onSelect: () => void;
 }
 
-export function ReviewRow({ member: m, active, confirmingDelete, onStatus, onDelete, onSelect }: Props) {
+const QUICK_REASONS = ["Photo is unclear", "Bio is too short or off-topic", "Wrong domain or position", "Duplicate or test entry"];
+
+export function ReviewRow({ member: m, active, confirmingDelete, rejecting, onStatus, onRejectConfirm, onRejectCancel, onDelete, onSelect }: Props) {
   const color = domainColor(m.domain);
+  const [note, setNote] = useState("");
   return (
     <li
       id={`row-${m.id}`}
@@ -52,6 +59,9 @@ export function ReviewRow({ member: m, active, confirmingDelete, onStatus, onDel
         <p className="mt-1 text-[13px] text-dim">
           {m.srn}, {m.branch}, Semester {m.semester}. Submitted {timeAgo(m.created_at)}.
         </p>
+        {m.status === "rejected" && m.rejection_note && (
+          <p className="mt-2.5 rounded-xl border border-bad/30 bg-bad/10 px-3 py-2 text-[13px] text-bad">Reason: {m.rejection_note}</p>
+        )}
         {m.bio && <p className="mt-2.5 line-clamp-3 break-words text-sm leading-relaxed text-fg/85">{m.bio}</p>}
         <div className="mt-2.5 flex flex-wrap items-center gap-1 text-dim">
           <a href={`mailto:${m.email}`} className="inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[13px] hover:bg-cell-2 hover:text-fg">
@@ -101,6 +111,27 @@ export function ReviewRow({ member: m, active, confirmingDelete, onStatus, onDel
           {confirmingDelete ? "Click to confirm" : "Delete"}
         </button>
       </div>
+
+      {rejecting && (
+        <div className="rounded-2xl border border-wall-2 bg-cell-2 p-4 sm:col-span-2 lg:col-span-3" onKeyDown={(e) => e.key === "Escape" && onRejectCancel()}>
+          <label htmlFor={`note-${m.id}`} className="text-sm font-medium">
+            Reason for rejecting {m.name} <span className="font-normal text-dim">optional</span>
+          </label>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {QUICK_REASONS.map((r) => (
+              <button key={r} type="button" onClick={() => setNote(r)} className="rounded-full border border-wall-2 px-3 py-1 text-[13px] text-dim transition hover:bg-cell hover:text-fg">
+                {r}
+              </button>
+            ))}
+          </div>
+          <textarea id={`note-${m.id}`} autoFocus value={note} onChange={(e) => setNote(e.target.value)} maxLength={300} rows={2} placeholder="A note for the other admins" className="mt-3 w-full resize-none rounded-xl border border-wall bg-cell px-3.5 py-2.5 text-sm placeholder:text-dim/60 focus-visible:outline-none focus:border-eosin focus:ring-2 focus:ring-eosin/25" />
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <button onClick={() => onRejectConfirm(m, note)} className="rounded-full bg-bad px-5 py-2 text-sm font-semibold text-ink transition hover:opacity-90">Confirm reject</button>
+            <button onClick={onRejectCancel} className="rounded-full border border-wall-2 px-5 py-2 text-sm font-medium transition hover:bg-cell">Cancel</button>
+            <span className="ml-auto text-[13px] tabular-nums text-dim">{note.length} / 300</span>
+          </div>
+        </div>
+      )}
     </li>
   );
 }

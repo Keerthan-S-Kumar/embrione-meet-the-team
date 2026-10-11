@@ -15,6 +15,7 @@ export interface Member {
   bio: string | null;
   photo_url: string;
   status: Status;
+  rejection_note: string | null;
   created_at: string;
 }
 
