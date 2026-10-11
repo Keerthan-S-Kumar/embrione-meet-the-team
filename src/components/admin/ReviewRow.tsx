@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Lightbox } from "@/components/Lightbox";
 import { Check, Mail, Trash2, Undo2, X } from "lucide-react";
 import { GitHubIcon, LinkedInIcon } from "@/components/Icons";
 import { domainColor, type Status } from "@/lib/constants";
@@ -30,6 +31,7 @@ const QUICK_REASONS = ["Photo is unclear", "Bio is too short or off-topic", "Wro
 export function ReviewRow({ member: m, active, confirmingDelete, rejecting, onStatus, onRejectConfirm, onRejectCancel, onDelete, onSelect }: Props) {
   const color = domainColor(m.domain);
   const [note, setNote] = useState("");
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   return (
     <li
       id={`row-${m.id}`}
@@ -39,10 +41,18 @@ export function ReviewRow({ member: m, active, confirmingDelete, rejecting, onSt
         active ? "border-eosin/60 ring-1 ring-eosin/30" : "border-wall",
       )}
     >
-      <div className="size-20 overflow-hidden rounded-2xl bg-cell-2 sm:size-[88px]">
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          setLightboxOpen(true);
+        }}
+        aria-label={`View ${m.name}'s photo full size`}
+        className="size-20 shrink-0 overflow-hidden rounded-2xl bg-cell-2 transition hover:opacity-80 sm:size-[88px]"
+        >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={m.photo_url} alt={`Photo of ${m.name}`} className="size-full object-cover" loading="lazy" />
-      </div>
+      </button>
 
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -132,6 +142,7 @@ export function ReviewRow({ member: m, active, confirmingDelete, rejecting, onSt
           </div>
         </div>
       )}
+      {lightboxOpen && <Lightbox src={m.photo_url} alt={`Photo of ${m.name}`} onClose={() => setLightboxOpen(false)} />}
     </li>
   );
 }
