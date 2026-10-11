@@ -19,6 +19,7 @@ create table if not exists public.members (
   bio          text,
   photo_url    text not null,
   status       text not null default 'pending', -- 'pending' | 'approved' | 'rejected'
+  rejection_note text,                          -- optional reason shown to admins when rejected
   created_at   timestamp with time zone default timezone('utc'::text, now()) not null,
 
   -- Extra safety: the database rejects bad data even if someone skips the website.
@@ -27,7 +28,8 @@ create table if not exists public.members (
   constraint members_position_ok check (position in ('Head','Vice-Head','Core Member','Member')),
   constraint members_semester_ok check (semester between 1 and 8),
   constraint members_status_ok  check (status in ('pending','approved','rejected')),
-  constraint members_bio_len    check (bio is null or char_length(bio) <= 200)
+  constraint members_bio_len    check (bio is null or char_length(bio) <= 200),
+  constraint members_note_len   check (rejection_note is null or char_length(rejection_note) <= 300)
 );
 
 -- One submission per SRN, ignoring upper/lower case.
@@ -53,7 +55,7 @@ drop policy if exists "Admin can delete"     on public.members;
 
 create policy "Public can submit pending profiles" on public.members
   for insert to anon, authenticated
-  with check (status = 'pending');
+  with check (status = 'pending' and rejection_note is null);
 
 create policy "Public can read approved profiles" on public.members
   for select to anon, authenticated
